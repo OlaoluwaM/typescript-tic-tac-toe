@@ -8,25 +8,24 @@ const ROW_COUNT = 3;
 const COL_COUNT = 3;
 const MAX_PLAY_COUNT = 9;
 
-const initialBoardState: string[][] = [
-  ['', '', ''],
-  ['', '', ''],
-  ['', '', ''],
-];
-
 let playCount = 0;
-let boardState = [
+type Cell = 'X' | 'O' | '';
+type Board = [[Cell, Cell, Cell], [Cell, Cell, Cell], [Cell, Cell, Cell]];
+
+let boardState: Board = [
   ['', '', ''],
   ['', '', ''],
   ['', '', ''],
 ];
 
-type PossibleMoves = 'X' | 'O' | '';
+type PossibleMoves = 'X' | 'O';
 let currentMove: PossibleMoves = 'X';
+let winner: PossibleMoves | 'Draw';
 
 function declareDraw() {
   if (!h1Element) throw new Error('h1 element does not exist');
   h1Element.innerText = 'Draw!';
+  winner = 'Draw';
 }
 
 function declareWinner(winner: PossibleMoves) {
@@ -34,7 +33,6 @@ function declareWinner(winner: PossibleMoves) {
   h1Element.innerText = `Winner is player ${winner}`;
 
   if (!boardElement) throw new Error('board element does not exist');
-  boardElement.style.pointerEvents = 'none';
 }
 
 function resetH1Text() {
@@ -46,22 +44,22 @@ function checkIfWinnerExists(
   row: number,
   col: number,
   moveAtCell: PossibleMoves
-): PossibleMoves {
-  const verticalCheck = boardState.reduce((movesArr, _, currRowIndex, arr) => {
+): PossibleMoves | void {
+  const verticalCheck = boardState.reduce((movesArr: Cell[], _, currRowIndex, arr) => {
     movesArr.push(arr[currRowIndex][col]);
     return movesArr;
   }, []);
 
   const horizontalCheck = boardState[row];
 
-  const diagonalCheck1 = boardState.reduce((movesArr, _, currRowIndex, arr) => {
+  const diagonalCheck1 = boardState.reduce((movesArr: Cell[], _, currRowIndex, arr) => {
     const currColumn = currRowIndex;
 
     movesArr.push(arr[currRowIndex][currColumn]);
     return movesArr;
   }, []);
 
-  const diagonalCheck2 = boardState.reduce((movesArr, _, currRowIndex, arr) => {
+  const diagonalCheck2 = boardState.reduce((movesArr: Cell[], _, currRowIndex, arr) => {
     const currColumn = Math.abs(currRowIndex - (arr.length - 1));
     movesArr.push(arr[currRowIndex][currColumn]);
     return movesArr;
@@ -74,7 +72,7 @@ function checkIfWinnerExists(
     diagonalCheck2,
   ].some(movesArr => movesArr.every(recordedMove => recordedMove === moveAtCell));
 
-  return hasWonInSomeWay ? moveAtCell : '';
+  return hasWonInSomeWay ? moveAtCell : undefined;
 }
 
 function setCurrentMove() {
@@ -92,7 +90,7 @@ function setCurrentMove() {
   moveElement.innerText = `Next Move: ${currentMove}`;
 }
 
-function createCell(row: number, col: number, content: string = '') {
+function createCell(row: number, col: number, content: Cell = '') {
   const cell = document.createElement('button');
   cell.setAttribute('data-row', row.toString());
   cell.setAttribute('data-col', col.toString());
@@ -102,12 +100,15 @@ function createCell(row: number, col: number, content: string = '') {
   cell.addEventListener(
     'click',
     () => {
+      if (winner) return;
+
       playCount += 1;
       cell.setAttribute('data-content', currentMove);
       boardState[row][col] = currentMove;
 
       if (playCount === MAX_PLAY_COUNT) declareDraw();
       if (playCount > 4 && checkIfWinnerExists(row, col, currentMove)) {
+        winner = currentMove;
         declareWinner(currentMove);
       }
       setCurrentMove();
@@ -123,11 +124,9 @@ function renderBoard() {
   if (!boardElement) throw new Error('Cannot find board');
   boardElement.innerHTML = '';
 
-  boardElement.style.pointerEvents = '';
-
   for (let i = 0; i < ROW_COUNT; i++) {
     for (let j = 0; j < COL_COUNT; j++) {
-      boardElement.appendChild(createCell(i, j, initialBoardState[i][j]));
+      boardElement.appendChild(createCell(i, j, boardState[i][j]));
     }
   }
 

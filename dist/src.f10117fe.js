@@ -207,21 +207,21 @@ var initialH1Text = (_a = h1Element === null || h1Element === void 0 ? void 0 : 
 var ROW_COUNT = 3;
 var COL_COUNT = 3;
 var MAX_PLAY_COUNT = 9;
-var initialBoardState = [['', '', ''], ['', '', ''], ['', '', '']];
 var playCount = 0;
 var boardState = [['', '', ''], ['', '', ''], ['', '', '']];
 var currentMove = 'X';
+var winner;
 
 function declareDraw() {
   if (!h1Element) throw new Error('h1 element does not exist');
   h1Element.innerText = 'Draw!';
+  winner = 'Draw';
 }
 
 function declareWinner(winner) {
   if (!h1Element) throw new Error('h1 element does not exist');
   h1Element.innerText = "Winner is player ".concat(winner);
   if (!boardElement) throw new Error('board element does not exist');
-  boardElement.style.pointerEvents = 'none';
 }
 
 function resetH1Text() {
@@ -250,7 +250,7 @@ function checkIfWinnerExists(row, col, moveAtCell) {
       return recordedMove === moveAtCell;
     });
   });
-  return hasWonInSomeWay ? moveAtCell : '';
+  return hasWonInSomeWay ? moveAtCell : undefined;
 }
 
 function setCurrentMove() {
@@ -277,12 +277,14 @@ function createCell(row, col) {
   cell.setAttribute('data-content', content);
   cell.classList.add('cell');
   cell.addEventListener('click', function () {
+    if (winner) return;
     playCount += 1;
     cell.setAttribute('data-content', currentMove);
     boardState[row][col] = currentMove;
     if (playCount === MAX_PLAY_COUNT) declareDraw();
 
     if (playCount > 4 && checkIfWinnerExists(row, col, currentMove)) {
+      winner = currentMove;
       declareWinner(currentMove);
     }
 
@@ -297,11 +299,10 @@ function renderBoard() {
   if (!appElement) throw new Error('Cannot find app');
   if (!boardElement) throw new Error('Cannot find board');
   boardElement.innerHTML = '';
-  boardElement.style.pointerEvents = '';
 
   for (var i = 0; i < ROW_COUNT; i++) {
     for (var j = 0; j < COL_COUNT; j++) {
-      boardElement.appendChild(createCell(i, j, initialBoardState[i][j]));
+      boardElement.appendChild(createCell(i, j, boardState[i][j]));
     }
   }
 
